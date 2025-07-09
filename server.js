@@ -28,5 +28,8 @@ mongoose.connect(`mongodb+srv://${dbuser}:${dbpass}@cluster0.s42wzhx.mongodb.net
     console.log("Server started on port 8080...");
   });
 });
-
+// testing
+app.get("/",(req,res)=>{
+  res.send("backend live...");
+});
 app.use("/api/users", userRouter);
