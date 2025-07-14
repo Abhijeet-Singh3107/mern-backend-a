@@ -1,20 +1,31 @@
 import express from "express";
-import { authenticate, authorize } from "../middlewares/auth.js";
-const ROUTER = express.Router();
-import {register, userUpdate, showUsers, login, userDelete} from "../controllers/userController.js";
-// GET all users (Admin only)
-ROUTER.get("/users", authenticate, authorize("Admin"), showUsers);
+import {
+  register,
+  login,
+  getUserProfile,
+  updateUser,
+  deleteUser,
+  getUsers,
+} from "../controllers/userController.js";
 
-// REGISTER
-ROUTER.post("/register", register);
+const router = express.Router();
 
-// LOGIN
-ROUTER.post("/login", login);
+// Register a new user
+router.post("/register", register);
 
-// PATCH (Update user)
-ROUTER.patch("/:id", authenticate, authorize("Admin"), userUpdate);
+// Login user
+router.post("/login", login);
 
-// DELETE
-ROUTER.delete("/:id", authenticate, authorize("Admin"), userDelete);
+// Get user profile by ID
+router.get("/user/:id", getUserProfile);
 
-export default ROUTER;
+// Update user by ID (PUT for full update, supports password hash)
+router.put("/user/:id", updateUser);
+
+// Delete user by ID
+router.delete("/user/:id", deleteUser);
+
+// Get all users (with pagination & search)
+router.get("/users", getUsers);
+
+export default router;

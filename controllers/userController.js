@@ -1,55 +1,43 @@
 import userModel from "../models/userModel.js";
 import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";      
+import jwt from "jsonwebtoken";
+
 const SECRET = "secret";
-        // register function...
+
+// ─────────────────────────────────────────────────────────────
+// Register a new user
 const register = async (req, res) => {
-  const { name, email, role, password } = req.body;
-  const hashedPass = await bcrypt.hash(password, 10);
-  const user = {
-    name,
-    email,
-    role,
-    password: hashedPass,
-  };
-  const result = await userModel.create(user);
-  res.status(201).json(result);
-};
-
-        // patch...
-const userUpdate = async (req, res) => {
   try {
-    const id = req.params.id;
-    const body = req.body;
-    const result = await userModel.findByIdAndUpdate(id, body, { new: true });
-    res.status(200).json({ message: "User updated successfully", result });
+    const { name, email, role, password } = req.body;
+
+    const hashedPass = await bcrypt.hash(password, 10);
+    const user = { name, email, role, password: hashedPass };
+
+    const result = await userModel.create(user);
+    res.status(201).json(result);
   } catch (err) {
-    console.log(err);
-    res.status(500).json({ message: "Something went wrong..." });
+    console.error(err);
+    res.status(500).json({ message: "Registration failed" });
   }
 };
 
-        // show users
-const showUsers = async (req, res) => {
-  try {
-    const result = await userModel.find();
-    res.json({ result });
-  } catch (err) {
-    res.status(400).json({ message: "Some error..." });
-  }
-};
-
-        // login function
+// ─────────────────────────────────────────────────────────────
+// User Login with JWT
 const login = async (req, res) => {
-  const { email, password } = req.body;
-  const existingUser = await userModel.findOne({ email });
+  try {
+    const { email, password } = req.body;
+    const existingUser = await userModel.findOne({ email });
 
-  if (!existingUser) {
-    return res.status(404).json({ message: "User not found..." });
-  }
+    if (!existingUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
 
-  const matchPass = await bcrypt.compare(password, existingUser.password);
-  if (matchPass) {
+    const matchPass = await bcrypt.compare(password, existingUser.password);
+
+    if (!matchPass) {
+      return res.status(403).json({ message: "Wrong password: Access Denied" });
+    }
+
     const userObj = {
       name: existingUser.name,
       email: existingUser.email,
@@ -58,27 +46,101 @@ const login = async (req, res) => {
 
     const token = jwt.sign(userObj, SECRET, { expiresIn: "1h" });
     res.status(200).json({ user: userObj, token });
-  } else {
-    res.status(403).json({ message: "Wrong password: Access Denied" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Login failed" });
   }
 };
 
+// ─────────────────────────────────────────────────────────────
+// Get a user by ID
+const getUserProfile = async (req, res) => {
+  try {
+    const id = req.params.id;
+    const result = await userModel.findById(id);
+    if (!result) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    res.status(200).json(result);
+  } catch (err) {
+    console.error(err);
+    res.status(400).json({ message: "Failed to fetch user" });
+  }
+};
 
-        // delete user
-const userDelete =  async (req, res) => {
+// ─────────────────────────────────────────────────────────────
+// Update user by ID (handles password hashing if present)
+const updateUser = async (req, res) => {
+  try {
+    const id = req.params.id;
+    const updates = { ...req.body };
+
+    if (updates.password) {
+      updates.password = await bcrypt.hash(updates.password, 10);
+    }
+
+    const result = await userModel.findByIdAndUpdate(id, updates, { new: true });
+
+    if (!result) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.status(200).json({ message: "User updated", result });
+  } catch (err) {
+    console.error(err);
+    res.status(400).json({ message: "Failed to update user" });
+  }
+};
+
+// ─────────────────────────────────────────────────────────────
+// Delete user by ID
+const deleteUser = async (req, res) => {
   try {
     const id = req.params.id;
     const result = await userModel.findByIdAndDelete(id);
 
     if (!result) {
-      return res.status(404).json({ message: "User not found." });
+      return res.status(404).json({ message: "User not found" });
     }
 
-    res.status(200).json({ message: "User deleted successfully.", result });
+    res.status(200).json({ message: "User deleted successfully", result });
   } catch (err) {
-    console.log(err);
-    res.status(500).json({ message: "Something went wrong..." });
+    console.error(err);
+    res.status(500).json({ message: "Failed to delete user" });
   }
 };
 
-export {register, userUpdate, showUsers, login, userDelete};
+// ─────────────────────────────────────────────────────────────
+// Get paginated + filtered user list
+const getUsers = async (req, res) => {
+  try {
+    const { page = 1, limit = 3, search = "" } = req.query;
+    const skip = (page - 1) * limit;
+
+    const filter = { firstName: { $regex: search, $options: "i" } };
+    const count = await userModel.countDocuments(filter);
+    const total = Math.ceil(count / limit);
+
+    const users = await userModel
+      .find(filter)
+      .skip(skip)
+      .limit(Number(limit))
+      .sort({ updatedAt: -1 });
+
+    res.status(200).json({ users, total });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Failed to retrieve users" });
+  }
+};
+
+// ─────────────────────────────────────────────────────────────
+// Export functions
+export {
+  register,
+  login,
+  getUserProfile,
+  updateUser,
+  deleteUser,
+  getUsers
+};
