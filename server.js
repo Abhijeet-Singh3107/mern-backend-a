@@ -12,14 +12,14 @@ app.use(express.json());
 
 app.use(cors());
 
-const dbuser = encodeURIComponent(process.env.DBUSER);
-const dbpass = encodeURIComponent(process.env.DBPASS);
+// const dbuser = encodeURIComponent(process.env.DBUSER);
+// const dbpass = encodeURIComponent(process.env.DBPASS);
 
 
-// const dbuser = encodeURIComponent(process.env.MONGO_USER);
-// const dbpass = encodeURIComponent(process.env.MONGO_PASS);
+const dbuser = encodeURIComponent(process.env.MONGO_USER);
+const dbpass = encodeURIComponent(process.env.MONGO_PASS);
 
-// const mernDB = "mernDB";  // atlas databse name...
+const mernDB = "mernDB";  // atlas databse name...
 
 // mongoose.connect(`mongodb://${dbuser}:${dbpass}@localhost:27017/lpu?authsource=admin`).then(() => {
 //   app.listen(8080, () => {
