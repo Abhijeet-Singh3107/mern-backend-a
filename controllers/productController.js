@@ -79,6 +79,7 @@ const showProducts = async (req, res) => {
 //   }
 // };
 
+  // removing the limit from display...
 const displayProducts = async (req, res) => {
   try {
     const count = await productModel.countDocuments();
@@ -90,5 +91,6 @@ const displayProducts = async (req, res) => {
     res.status(500).json({ message: "Something went wrong" });
   }
 };
+
 
 export { addProduct, deleteProduct, updateProduct, getProduct, showProducts,displayProducts };
