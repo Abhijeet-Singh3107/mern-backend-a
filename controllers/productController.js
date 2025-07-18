@@ -81,7 +81,6 @@ const showProducts = async (req, res) => {
 
 const displayProducts = async (req, res) => {
   try {
-    const { page = 1} = req.query;
     const count = await productModel.countDocuments();
     const total = Math.ceil(count/limit);
     const products = await productModel.find();
